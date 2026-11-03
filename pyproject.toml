@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=70.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "estoquefacil"
+version = "0.1.0"
+description = "EstoqueFácil — API de gestão de estoque (Flask)"
+requires-python = ">=3.10"
+dependencies = [
+    "Flask>=3.0",
+    "Flask-SQLAlchemy>=3.1",
+    "Flask-Migrate>=4.0",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["invoke"]
+test = ["pytest>=8.3", "pytest-flask"]
+postgres = ["psycopg2-binary"]
+
+[tool.setuptools]
+packages = ["app"]
+py-modules = ["config"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
