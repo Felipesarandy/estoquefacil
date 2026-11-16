@@ -6,3 +6,7 @@ instance/
 *.db
 .pytest_cache/
 *.egg-info/
+
+.venv/
+*.db-wal
+*.db-shm

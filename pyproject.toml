@@ -12,6 +12,8 @@ dependencies = [
     "Flask-SQLAlchemy>=3.1",
     "Flask-Migrate>=4.0",
     "python-dotenv",
+    "Flask-JWT-Extended>=4.6",
+    "Flask-Cors>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -20,8 +22,8 @@ test = ["pytest>=8.3", "pytest-flask"]
 postgres = ["psycopg2-binary"]
 
 [tool.setuptools]
-packages = ["app"]
-py-modules = ["config"]
+packages = ["app", "app.routes"]
+py-modules = ["config", "backend_app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
