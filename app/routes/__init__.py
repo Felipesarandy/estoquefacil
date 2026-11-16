@@ -47,13 +47,14 @@ def configure_api(app, config_name=None):
     CORS(app, resources={r"/api/*": {"origins": origins}})
 
     # Registro das rotas
-    from app.routes import auth, users, catalog, stock
+    from app.routes import auth, users, catalog, stock, replenishment
 
     for blueprint in (
         auth.bp,
         users.bp,
         catalog.bp,
-        stock.bp
+        stock.bp,
+        replenishment.bp
     ):
         app.register_blueprint(blueprint)
 

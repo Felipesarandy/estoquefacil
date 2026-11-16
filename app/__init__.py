@@ -27,8 +27,8 @@ def create_app(config_name=None):
     migrate.init_app(app, db, render_as_batch=True)
 
     from app import models  # noqa: F401  (registra os models para o Flask-Migrate)
-    from app.seed import seed_command
-    app.cli.add_command(seed_command)
+    from app.equine_catalog import cadastrar_equinos
+    app.cli.add_command(cadastrar_equinos)
 
     @app.get("/api/health")
     def health():

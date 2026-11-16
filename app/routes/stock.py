@@ -252,13 +252,11 @@ def alerts(user):
             store_id=user.store_id,
             active=True
         )
-        .filter(
-            Product.current_stock <= Product.min_stock
-        )
         .order_by(Product.current_stock)
         .all()
     )
 
+    items = [item for item in items if item.is_low_stock]
     return jsonify({
         "count": len(items),
         "out_of_stock": sum(

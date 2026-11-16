@@ -93,6 +93,10 @@ class Product(db.Model):
 
     @property
     def is_low_stock(self):
+        policy = db.session.get(ReplenishmentPolicy, self.id) if self.id else None
+        if policy:
+            from app.routes.replenishment import plan
+            return plan(self, policy)["reorder_needed"]
         return self.current_stock <= self.min_stock
 
     @property
@@ -139,3 +143,34 @@ class InventoryCount(db.Model):
     def difference(self):
         """Negativo = faltou produto (quebra); positivo = sobrou."""
         return self.counted_quantity - self.system_quantity
+
+
+class ReplenishmentPolicy(db.Model):
+    """Parâmetros logísticos; não representa prescrição veterinária."""
+    __tablename__ = "replenishment_policies"
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), primary_key=True)
+    weekly_consumption = db.Column(db.Numeric(10, 3), nullable=False)
+    lead_days = db.Column(db.Integer, nullable=False)
+    safety_days = db.Column(db.Integer, nullable=False, default=2)
+    order_quantity = db.Column(db.Numeric(10, 3), nullable=False, default=1)  # legado, nao utilizado
+    __table_args__ = (
+        db.CheckConstraint("weekly_consumption > 0 AND lead_days >= 0 AND safety_days >= 0 AND order_quantity > 0"),
+    )
+
+
+class LegacyPurchaseOrder(db.Model):
+    """Somente preserva registros antigos; não há rotas de pedidos."""
+    __tablename__ = "purchase_orders"
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    quantity = db.Column(db.Numeric(10, 3), nullable=False)
+    expected_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="pending")
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    received_at = db.Column(db.DateTime)
+    received_by = db.Column(db.Integer, db.ForeignKey("users.id"))
+    __table_args__ = (
+        db.CheckConstraint("quantity > 0"),
+        db.CheckConstraint("status IN ('pending', 'received', 'cancelled')"),
+    )

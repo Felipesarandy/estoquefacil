@@ -4,7 +4,18 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Category, InventoryCount, Product, StockMovement, User
-from app.seed import registrar_movimentacao
+from app.extensions import db
+
+
+def registrar_movimentacao(produto, usuario, tipo, motivo, quantidade):
+    """Prepara dados somente para os testes de modelos."""
+    quantidade = Decimal(str(quantidade))
+    if tipo == "saida" and quantidade > produto.current_stock:
+        raise ValueError("Saldo insuficiente")
+    produto.current_stock += quantidade if tipo == "entrada" else -quantidade
+    db.session.add(StockMovement(product=produto, user=usuario, type=tipo,
+                                reason=motivo, quantity=quantidade,
+                                unit_cost=produto.cost_price))
 
 
 def test_senha_com_hash(loja):
