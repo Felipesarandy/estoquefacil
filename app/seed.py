@@ -2,17 +2,19 @@
 
 Uso:  flask seed
 """
+from datetime import date
 from decimal import Decimal
 
 import click
 
 from app.extensions import db
 from app.models import (
-    Category, InventoryCount, Product, StockMovement, Store, Supplier, User,
+    Category, InventoryCount, Product, Stable, StockMovement, Supplier, User,
 )
 
 
-def registrar_movimentacao(produto, usuario, tipo, motivo, quantidade, obs=None):
+def registrar_movimentacao(produto, usuario, tipo, motivo, quantidade, obs=None,
+                           lote=None, validade=None):
     """Cria a movimentação e atualiza o saldo na mesma operação."""
     quantidade = Decimal(str(quantidade))
     if tipo == "saida" and quantidade > produto.current_stock:
@@ -21,6 +23,7 @@ def registrar_movimentacao(produto, usuario, tipo, motivo, quantidade, obs=None)
     mov = StockMovement(
         product=produto, user=usuario, type=tipo, reason=motivo,
         quantity=quantidade, unit_cost=produto.cost_price, note=obs,
+        batch=lote, expiration_date=validade,
     )
     if tipo == "entrada":
         produto.current_stock += quantidade
@@ -32,77 +35,82 @@ def registrar_movimentacao(produto, usuario, tipo, motivo, quantidade, obs=None)
 
 @click.command("seed")
 def seed_command():
-    """Apaga os dados e popula o banco com uma loja de exemplo."""
+    """Apaga os dados e popula o banco com um haras de exemplo."""
     # limpa as tabelas (das "filhas" para as "mães"), mantendo a estrutura das migrações
     for table in reversed(db.metadata.sorted_tables):
         db.session.execute(table.delete())
 
-    loja = Store(name="Papelaria Exemplo", business_type="Papelaria")
+    haras = Stable(name="Haras Exemplo", city="Vila Velha")
 
-    admin = User(store=loja, name="Felipe Admin", email="admin@loja.com", role="admin")
+    admin = User(stable=haras, name="Felipe Admin", email="admin@haras.com", role="admin")
     admin.set_password("admin123")
-    func = User(store=loja, name="Ana Funcionária", email="func@loja.com", role="funcionario")
-    func.set_password("func123")
+    tratador = User(stable=haras, name="João Tratador", email="tratador@haras.com", role="tratador")
+    tratador.set_password("trat123")
 
-    cadernos = Category(store=loja, name="Cadernos")
-    escrita = Category(store=loja, name="Escrita")
-    papel = Category(store=loja, name="Papel")
+    racao = Category(stable=haras, name="Ração")
+    volumoso = Category(stable=haras, name="Volumoso")
+    suplementos = Category(stable=haras, name="Suplementos")
+    vitaminas = Category(stable=haras, name="Vitaminas")
 
-    tilibra = Supplier(store=loja, name="Tilibra", phone="(27) 3333-0001", email="vendas@tilibra.com")
-    bic = Supplier(store=loja, name="BIC", phone="(27) 3333-0002")
+    nutriequi = Supplier(stable=haras, name="Nutriequi Rações", phone="(27) 3333-0001",
+                         email="vendas@nutriequi.com")
+    agro = Supplier(stable=haras, name="Agropecuária Capixaba", phone="(27) 3333-0002")
 
     produtos = [
-        Product(store=loja, category=cadernos, supplier=tilibra, name="Caderno 10 matérias",
-                code="789100", unit="un", cost_price=Decimal("18.00"), sale_price=Decimal("32.90"),
-                min_stock=Decimal("5"), max_stock=Decimal("40")),
-        Product(store=loja, category=cadernos, supplier=tilibra, name="Caderno brochura 96 fls",
-                code="789101", unit="un", cost_price=Decimal("6.50"), sale_price=Decimal("12.90"),
-                min_stock=Decimal("10")),
-        Product(store=loja, category=escrita, supplier=bic, name="Caneta azul",
-                code="789200", unit="un", cost_price=Decimal("1.20"), sale_price=Decimal("2.50"),
-                min_stock=Decimal("30")),
-        Product(store=loja, category=escrita, supplier=bic, name="Lápis HB",
-                code="789201", unit="un", cost_price=Decimal("0.80"), sale_price=Decimal("1.80"),
-                min_stock=Decimal("20")),
-        Product(store=loja, category=papel, name="Papel A4 (resma)",
-                code="789300", unit="cx", cost_price=Decimal("24.00"), sale_price=Decimal("34.90"),
-                min_stock=Decimal("3")),
-        Product(store=loja, category=papel, name="Papel kraft",
-                unit="m", cost_price=Decimal("2.00"), sale_price=Decimal("4.50"),
-                min_stock=Decimal("10")),
+        Product(stable=haras, category=racao, supplier=nutriequi, name="Ração peletizada 14% PB",
+                code="EQ001", unit="kg", cost_price=Decimal("3.20"),
+                min_stock=Decimal("100"), max_stock=Decimal("600"), daily_consumption=Decimal("24")),
+        Product(stable=haras, category=racao, supplier=nutriequi, name="Ração extrusada performance",
+                code="EQ002", unit="kg", cost_price=Decimal("5.80"),
+                min_stock=Decimal("50"), daily_consumption=Decimal("8")),
+        Product(stable=haras, category=volumoso, supplier=agro, name="Feno de tifton (fardo)",
+                code="EQ100", unit="un", cost_price=Decimal("35.00"),
+                min_stock=Decimal("10"), daily_consumption=Decimal("2")),
+        Product(stable=haras, category=suplementos, supplier=agro, name="Sal mineral",
+                code="EQ200", unit="kg", cost_price=Decimal("6.00"),
+                min_stock=Decimal("10"), daily_consumption=Decimal("0.4")),
+        Product(stable=haras, category=suplementos, supplier=agro, name="Óleo de soja",
+                code="EQ201", unit="l", cost_price=Decimal("9.00"),
+                min_stock=Decimal("5"), daily_consumption=Decimal("0.5")),
+        Product(stable=haras, category=vitaminas, supplier=nutriequi, name="Suplemento vitamínico em pó",
+                code="EQ300", unit="kg", cost_price=Decimal("48.00"),
+                min_stock=Decimal("2"), daily_consumption=Decimal("0.2")),
     ]
-    db.session.add_all([loja, admin, func, cadernos, escrita, papel, tilibra, bic, *produtos])
+    db.session.add_all([haras, admin, tratador, racao, volumoso, suplementos, vitaminas,
+                        nutriequi, agro, *produtos])
     db.session.flush()
 
-    caderno10, brochura, caneta, lapis, a4, kraft = produtos
+    peletizada, extrusada, feno, sal, oleo, vitamina = produtos
 
-    # Entradas (compras)
-    registrar_movimentacao(caderno10, admin, "entrada", "compra", 20)
-    registrar_movimentacao(brochura, admin, "entrada", "compra", 30)
-    registrar_movimentacao(caneta, admin, "entrada", "compra", 100)
-    registrar_movimentacao(lapis, admin, "entrada", "compra", 50)
-    registrar_movimentacao(a4, admin, "entrada", "compra", 5)
-    registrar_movimentacao(kraft, admin, "entrada", "compra", 25.5)
+    # Entradas (compras), com lote e validade
+    registrar_movimentacao(peletizada, admin, "entrada", "compra", 500, "20 sacos de 25 kg",
+                           lote="L2611A", validade=date(2027, 3, 1))
+    registrar_movimentacao(extrusada, admin, "entrada", "compra", 120,
+                           lote="L2611B", validade=date(2027, 2, 15))
+    registrar_movimentacao(feno, admin, "entrada", "compra", 40)
+    registrar_movimentacao(sal, admin, "entrada", "compra", 25, lote="S1029", validade=date(2027, 10, 1))
+    registrar_movimentacao(oleo, admin, "entrada", "compra", 20)
+    registrar_movimentacao(vitamina, admin, "entrada", "compra", 5, lote="V0915", validade=date(2027, 1, 30))
 
-    # Saídas (vendas, uso interno e quebra)
-    registrar_movimentacao(caderno10, func, "saida", "venda", 8)
-    registrar_movimentacao(brochura, func, "saida", "venda", 22)   # fica abaixo do mínimo
-    registrar_movimentacao(caneta, func, "saida", "venda", 75)     # fica abaixo do mínimo
-    registrar_movimentacao(lapis, func, "saida", "venda", 12)
-    registrar_movimentacao(a4, func, "saida", "uso_interno", 1)
-    registrar_movimentacao(a4, func, "saida", "avaria", 1, "Caixa molhada")
-    registrar_movimentacao(kraft, func, "saida", "venda", 25.5)    # zera o estoque
+    # Saídas (alimentador, trato manual e quebra)
+    registrar_movimentacao(peletizada, tratador, "saida", "abastecimento_alimentador", 420)  # abaixo do mínimo
+    registrar_movimentacao(extrusada, tratador, "saida", "trato_manual", 40)
+    registrar_movimentacao(feno, tratador, "saida", "trato_manual", 32)          # abaixo do mínimo
+    registrar_movimentacao(sal, tratador, "saida", "trato_manual", 12)
+    registrar_movimentacao(oleo, tratador, "saida", "trato_manual", 10)
+    registrar_movimentacao(oleo, tratador, "saida", "avaria", 2, "Galão furado")
+    registrar_movimentacao(vitamina, tratador, "saida", "trato_manual", 3)       # fica no mínimo
 
-    # Auditoria: contagem física encontrou 2 lápis a menos
-    contagem = InventoryCount(product=lapis, user=admin,
-                              system_quantity=lapis.current_stock, counted_quantity=Decimal("36"))
+    # Auditoria: contagem física encontrou 1 kg de sal mineral a menos
+    contagem = InventoryCount(product=sal, user=admin,
+                              system_quantity=sal.current_stock, counted_quantity=Decimal("12"))
     db.session.add(contagem)
-    registrar_movimentacao(lapis, admin, "saida", "ajuste", 2, "Ajuste após inventário")
+    registrar_movimentacao(sal, admin, "saida", "ajuste", 1, "Ajuste após inventário")
 
     db.session.commit()
 
     em_alerta = [p.name for p in produtos if p.is_low_stock]
     click.echo("Banco populado!")
-    click.echo("  admin@loja.com / admin123  (admin)")
-    click.echo("  func@loja.com  / func123   (funcionário)")
-    click.echo(f"  Produtos em alerta: {', '.join(em_alerta)}")
+    click.echo("  admin@haras.com    / admin123  (admin)")
+    click.echo("  tratador@haras.com / trat123   (tratador)")
+    click.echo(f"  Insumos em alerta: {', '.join(em_alerta)}")

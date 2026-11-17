@@ -1,4 +1,11 @@
-# EstoqueFácil — Backend (parte do banco de dados)
+# EstoqueFácil Equihealth — Backend (parte do banco de dados)
+
+Controle de estoque dos insumos de um haras que usa o alimentador automático **Equihealth**: ração, volumoso (feno), suplementos e vitaminas.
+
+- Entradas: `compra`, `doacao`, `ajuste` (com lote e validade opcionais)
+- Saídas: `abastecimento_alimentador`, `trato_manual`, `avaria`, `vencimento`, `furto`, `ajuste`
+- Alerta de estoque mínimo, capital imobilizado e **dias de cobertura** (saldo ÷ consumo diário)
+- Inventário (contagem física x sistema)
 
 ## 1. Primeira vez (no terminal do VS Code, `Ctrl + '`)
 
@@ -22,8 +29,8 @@ flask seed                         # dados de exemplo
 O banco SQLite fica em `instance/dev.db` (abra com a extensão **SQLite Viewer**).
 
 Usuários de exemplo:
-- `admin@loja.com` / `admin123` (admin)
-- `func@loja.com` / `func123` (funcionário)
+- `admin@haras.com` / `admin123` (admin)
+- `tratador@haras.com` / `trat123` (tratador)
 
 ## 3. Rodar os testes
 

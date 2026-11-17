@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "estoquefacil"
 version = "0.1.0"
-description = "EstoqueFácil — API de gestão de estoque (Flask)"
+description = "EstoqueFácil Equihealth — API de estoque de insumos do haras (Flask)"
 requires-python = ">=3.10"
 dependencies = [
     "Flask>=3.0",
